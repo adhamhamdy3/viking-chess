@@ -149,6 +149,11 @@ def check_captures(board, r, c):
 
     return captured_positions, king_captured
 
+def is_king_in_corner(board):
+    for r, c in CORNERS:
+        if board[r][c] == KING:
+            return True
+    return False
 
 def create_initial_board():
     """

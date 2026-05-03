@@ -1,5 +1,5 @@
 import copy
-from engine import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE, CORNERS, THRONE, get_valid_moves, check_captures, get_owner
+from engine import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE, CORNERS, THRONE, get_valid_moves, check_captures, get_owner, is_king_in_corner
 
 def evaluate_board(board):
     """
@@ -69,54 +69,55 @@ def make_move(board, start_pos, end_pos):
     return new_board, king_captured
 
 def alpha_beta(board, depth, alpha, beta, maximizing_player):
-    """
-    Alpha-Beta Pruning algorithm implementation.
-    """
     if depth == 0:
         return evaluate_board(board), None
 
     if maximizing_player:
         max_eval = float('-inf')
-        best_move = None
-        # Maximizing side: DEFENDER (White)
         possible_moves = get_all_possible_moves(board, DEFENDER)
-        
+        best_move = possible_moves[0]
+
         for move in possible_moves:
             start, end = move
             new_board, king_captured = make_move(board, start, end)
+
+            # Early exit: king reached a corner — best possible outcome for white
+            if is_king_in_corner(new_board):
+                return float('inf'), move
+
             eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, False)
-            
-            if king_captured:
-                eval_score = float('-inf')
+
             if eval_score > max_eval:
                 max_eval = eval_score
                 best_move = move
-                
+
             alpha = max(alpha, eval_score)
             if beta <= alpha:
-                break # Beta cutoff
-                
+                break
+
         return max_eval, best_move
 
     else:
         min_eval = float('inf')
-        best_move = None
-        # Minimizing side: ATTACKER (Black)
         possible_moves = get_all_possible_moves(board, ATTACKER)
-        
+        best_move = possible_moves[0]
+
         for move in possible_moves:
             start, end = move
             new_board, king_captured = make_move(board, start, end)
-            eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, True)
-            
+
+            # Early exit: king captured — best possible outcome for black
             if king_captured:
-                eval_score = float('-inf')
+                return float('-inf'), move
+
+            eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, True)
+
             if eval_score < min_eval:
                 min_eval = eval_score
                 best_move = move
-                
+
             beta = min(beta, eval_score)
             if beta <= alpha:
-                break # Alpha cutoff
-                
+                break
+
         return min_eval, best_move
