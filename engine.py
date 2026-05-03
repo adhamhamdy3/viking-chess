@@ -187,10 +187,10 @@ def create_initial_board():
     return b
 
 
-def check_win(board):
+def check_win(board, king_captured):
     """
     Returns 'WHITE' if defenders won (King on a corner),
-    'BLACK' if attackers won (King no longer on the board), else None.
+    'BLACK' if attackers won 
     """
     king_pos = None
     for r in range(BOARD_SIZE):
@@ -201,8 +201,8 @@ def check_win(board):
         if king_pos:
             break
 
-    if king_pos is None:
-        return 'BLACK'
     if king_pos in CORNERS:
         return 'WHITE'
+    if king_captured:
+        return 'BLACK'
     return None

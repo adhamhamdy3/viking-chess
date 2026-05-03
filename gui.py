@@ -191,10 +191,10 @@ class HnefataflGUI:
         piece = self.board[sr][sc]
         self.board[sr][sc] = EMPTY
         self.board[er][ec] = piece
-        check_captures(self.board, er, ec)
+        _, self.king_captured = check_captures(self.board, er, ec)
 
     def _after_move(self):
-        winner = check_win(self.board)
+        winner = check_win(self.board, self.king_captured)
         if winner is not None:
             self._declare_winner(winner)
             return
