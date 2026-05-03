@@ -1,5 +1,5 @@
 import copy
-from engine import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE, CORNERS, THRONE, get_valid_moves, check_captures, get_owner
+from engine import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE, CORNERS, THRONE, get_valid_moves, check_captures, get_owner, check_win
 
 def evaluate_board(board):
     """
@@ -59,23 +59,31 @@ def get_all_possible_moves(board, player):
 def make_move(board, start_pos, end_pos):
     """
     Creates a deep copy of the board and applies the move, updating captures.
+    Returns (new_board, king_captured).
     """
     new_board = copy.deepcopy(board)
     sr, sc = start_pos
     er, ec = end_pos
-    
+
     piece = new_board[sr][sc]
     new_board[sr][sc] = EMPTY
     new_board[er][ec] = piece
-    
+
     # Process captures
-    check_captures(new_board, er, ec)
-    return new_board
+    _, king_captured = check_captures(new_board, er, ec)
+    return new_board, king_captured
 
 def alpha_beta(board, depth, alpha, beta, maximizing_player):
     """
     Alpha-Beta Pruning algorithm implementation.
     """
+    # Terminal: game already decided
+    winner = check_win(board)
+    if winner == 'WHITE':
+        return float('inf'), None
+    if winner == 'BLACK':
+        return float('-inf'), None
+
     if depth == 0:
         return evaluate_board(board), None
 
@@ -87,7 +95,7 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
         
         for move in possible_moves:
             start, end = move
-            new_board = make_move(board, start, end)
+            new_board, _ = make_move(board, start, end)
             eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, False)
             
             if eval_score > max_eval:
@@ -108,7 +116,7 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
         
         for move in possible_moves:
             start, end = move
-            new_board = make_move(board, start, end)
+            new_board, _ = make_move(board, start, end)
             eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, True)
             
             if eval_score < min_eval:
