@@ -86,6 +86,8 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
             new_board, king_captured = make_move(board, start, end)
             eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, False)
             
+            if king_captured:
+                eval_score = float('-inf')
             if eval_score > max_eval:
                 max_eval = eval_score
                 best_move = move
@@ -107,6 +109,8 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
             new_board, king_captured = make_move(board, start, end)
             eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, True)
             
+            if king_captured:
+                eval_score = float('-inf')
             if eval_score < min_eval:
                 min_eval = eval_score
                 best_move = move
