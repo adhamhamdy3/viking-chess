@@ -57,16 +57,35 @@ def get_all_possible_moves(board, player):
     return moves
 
 def make_move(board, start_pos, end_pos):
-    new_board = [row[:] for row in board]
     sr, sc = start_pos
     er, ec = end_pos
 
-    piece = new_board[sr][sc]
-    new_board[sr][sc] = EMPTY
-    new_board[er][ec] = piece
+    changes = []
 
-    _, king_captured = check_captures(new_board, er, ec)
-    return new_board, king_captured
+    piece = board[sr][sc]
+    changes.append((sr, sc, piece))
+    changes.append((er, ec, board[er][ec]))
+    board[sr][sc] = EMPTY
+    board[er][ec] = piece
+
+    # snapshot all potentially captured squares before check_captures modifies them
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    snapshots = {}
+    for dr, dc in directions:
+        adj_r, adj_c = er + dr, ec + dc
+        if 0 <= adj_r < BOARD_SIZE and 0 <= adj_c < BOARD_SIZE:
+            snapshots[(adj_r, adj_c)] = board[adj_r][adj_c]
+
+    captured, king_captured = check_captures(board, er, ec)
+
+    for (r, c) in captured:
+        changes.append((r, c, snapshots[(r, c)]))
+
+    return changes, king_captured
+
+def undo_move(board, changes):
+    for (r, c, old_val) in reversed(changes):
+        board[r][c] = old_val
 
 def alpha_beta(board, depth, alpha, beta, maximizing_player):
     if depth == 0:
@@ -79,13 +98,19 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
 
         for move in possible_moves:
             start, end = move
-            new_board, king_captured = make_move(board, start, end)
+            
+            # do
+            ch1, king_captured = make_move(board, start, end)
 
             # Early exit: king reached a corner — best possible outcome for white
-            if is_king_in_corner(new_board):
+            if is_king_in_corner(board):
                 return float('inf'), move
 
-            eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, False)
+            # recurse
+            eval_score, _ = alpha_beta(board, depth - 1, alpha, beta, False)
+
+            # undo
+            undo_move(board, ch1)
 
             if eval_score > max_eval:
                 max_eval = eval_score
@@ -104,13 +129,19 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
 
         for move in possible_moves:
             start, end = move
-            new_board, king_captured = make_move(board, start, end)
+
+            # do
+            ch2, king_captured = make_move(board, start, end)
 
             # Early exit: king captured — best possible outcome for black
             if king_captured:
                 return float('-inf'), move
 
-            eval_score, _ = alpha_beta(new_board, depth - 1, alpha, beta, True)
+            # recurse
+            eval_score, _ = alpha_beta(board, depth - 1, alpha, beta, True)
+
+            # undo
+            undo_move(board, ch2)
 
             if eval_score < min_eval:
                 min_eval = eval_score
