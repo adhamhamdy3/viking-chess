@@ -1,7 +1,7 @@
 import copy
 from engine import ATTACKER, DEFENDER, KING, EMPTY, BOARD_SIZE, CORNERS, THRONE, get_valid_moves, check_captures, get_owner, is_king_in_corner
 
-def evaluate_board(board):
+def evaluate_board(board, king_captured=False):
     """
     Adequate utility function that evaluates the current game state.
     Positive values favor defenders, negative values favor attackers.
@@ -9,6 +9,11 @@ def evaluate_board(board):
     attacker_count = 0
     defender_count = 0
     king_pos = None
+
+    if king_captured:
+        return float('-inf')  # Worst case for defenders
+    if is_king_in_corner(board):
+        return float('inf')  # Best case for defenders
 
     for r in range(BOARD_SIZE):
         for c in range(BOARD_SIZE):
@@ -26,11 +31,8 @@ def evaluate_board(board):
     if king_pos:
         kr, kc = king_pos
         # Example heuristic: distance from the throne (5, 5)
-        distance_from_throne = abs(kr - 5) + abs(kc - 5)
-        score += distance_from_throne * 0.5
-
-        if (kr, kc) in CORNERS:
-            score += 100
+        min_corner_dist = min(abs(kr - r) + abs(kc - c) for r, c in CORNERS)
+        score -= min_corner_dist * 1.5
 
     return score
 
@@ -87,9 +89,13 @@ def undo_move(board, changes):
     for (r, c, old_val) in reversed(changes):
         board[r][c] = old_val
 
-def alpha_beta(board, depth, alpha, beta, maximizing_player):
+def alpha_beta(board, depth, alpha, beta, maximizing_player, captured=False):
+    if captured:
+        return float('-inf'), None
+    if is_king_in_corner(board):
+        return float('inf'), None
     if depth == 0:
-        return evaluate_board(board), None
+        return evaluate_board(board, captured), None
 
     if maximizing_player:
         max_eval = float('-inf')
@@ -102,13 +108,9 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
             # do
             ch1, king_captured = make_move(board, start, end)
 
-            # Early exit: king reached a corner — best possible outcome for white
-            if is_king_in_corner(board):
-                undo_move(board, ch1)
-                return float('inf'), move
 
             # recurse
-            eval_score, _ = alpha_beta(board, depth - 1, alpha, beta, False)
+            eval_score, _ = alpha_beta(board, depth - 1, alpha, beta, False, king_captured)
 
             # undo
             undo_move(board, ch1)
@@ -134,13 +136,8 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
             # do
             ch2, king_captured = make_move(board, start, end)
 
-            # Early exit: king captured — best possible outcome for black
-            if king_captured:
-                undo_move(board, ch2)
-                return float('-inf'), move
-
             # recurse
-            eval_score, _ = alpha_beta(board, depth - 1, alpha, beta, True)
+            eval_score, _ = alpha_beta(board, depth - 1, alpha, beta, True, king_captured)
 
             # undo
             undo_move(board, ch2)

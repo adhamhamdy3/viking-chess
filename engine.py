@@ -60,27 +60,30 @@ def get_valid_moves(board, r, c):
             # 1. Blocked by another piece
             if board[curr_r][curr_c] != EMPTY:
                 break
-            
-            # 2. Throne & Corner Barriers
-            # Logic: Only King can move INTO, NO piece moves PAST
-            is_special = (curr_r, curr_c) == THRONE or (curr_r, curr_c) in CORNERS
-            
-            if is_special:
+
+            # 2. Corners — only king can land, blocks everyone
+            if (curr_r, curr_c) in CORNERS:
                 if piece == KING:
                     valid_moves.append((curr_r, curr_c))
-                # Path ends here for everyone
                 break
 
-            # 3. Sandwich Rule: Can move through, but not stop inside
-            if piece != KING:
-                if not is_sandwiched(board, curr_r, curr_c, piece):
+            # 3. Throne — only king can land, but everyone passes through
+            elif (curr_r, curr_c) == THRONE:
+                if piece == KING:
                     valid_moves.append((curr_r, curr_c))
+                # no break, no adding for others — just continue sliding
+
+            # 4. Normal square
             else:
-                valid_moves.append((curr_r, curr_c))
-            
+                if piece != KING:
+                    if not is_sandwiched(board, curr_r, curr_c, piece):
+                        valid_moves.append((curr_r, curr_c))
+                else:
+                    valid_moves.append((curr_r, curr_c))
+
             curr_r += dr
             curr_c += dc
-            
+
     return valid_moves
 
 def check_captures(board, r, c):
