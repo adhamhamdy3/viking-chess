@@ -104,6 +104,7 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
 
             # Early exit: king reached a corner — best possible outcome for white
             if is_king_in_corner(board):
+                undo_move(board, ch1)
                 return float('inf'), move
 
             # recurse
@@ -135,6 +136,7 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player):
 
             # Early exit: king captured — best possible outcome for black
             if king_captured:
+                undo_move(board, ch2)
                 return float('-inf'), move
 
             # recurse
